@@ -1,0 +1,282 @@
+<!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta name = "viewport" content = "width = device-width, initial-scale = 1">
+<meta name = "theme-color" content = "#000000">
+<meta charset = "utf-8">
+<style>
+body{margin: 16px; background-color: #000000}
+div{color: #888888; font-family: arial, sans-serif}
+select{background-color: #FFFFFF; border-radius: 4px; border: none; display: inline-block; font-size: 16px; font-weight: bold; margin: 4px 4px; padding: 8px}
+select:hover{background-color: #20B2AA; color: #000000; box-shadow: 0 1px 4px #20B2AA}
+
+div a{background-color: transparent; border-radius: 4px; color: #888888; display: inline-block; font-size: 16px; font-weight: bold; margin: 4px 4px; padding: 16px; text-decoration: none}
+div a:hover, a:active{background-color: #20B2AA; color: #000000; box-shadow: 0 1px 4px #20B2AA}
+
+.small{font-size: 10px}
+.bold{font-weight: bold}
+.warning{color: #FF4444}
+.hidden{display: none}
+
+.test{color: #FFFFFF; font-family: monospace; font-size: 3px; line-height: 100%}
+</style>
+</head>
+<body>
+<noscript><b>JavaScript is disabled.</b></noscript>
+<input type = "file">
+<audio id = "myAudio" src = "littlemermaid.mp3"></audio>
+<audio id = "myAudio2" src = "littlemermaid.mp3"></audio>
+<!--<div class = "batteryWarning">
+<span class = "warning">Your battery percent is below 10%!</span>
+</div>-->
+<div class = "setup">
+<div>Select your number: <select class = "number"><option value = "1">1</option><option value = "2">2</option><option value = "3">3</option><option value = "4">4</option><option value = "5">5</option><option value = "6">6</option><option value = "7">7</option><option value = "8">8</option><option value = "9">9</option><option value = "10">10</option><option value = "11">11</option></select><br>Select your letter: <select class = "letter"><option value = "A">A</option><option value = "B">B</option></select><br><span class = "small">Your phone's microphone is needed to tell when the parade starts! Grant access to your microphone next.</span><br><a href = "javascript:void(0)" class = "next">Next</a><br>CAUTION! This web app contains flashing colors of light which may not be suitable for photosensitive epilepsy.</div>
+</div>
+<div class = "tips">
+Get ready to be a part of Disney Paint the Night Parade! Tips: <ul><li>Maximize screen brightness</li><li>Watch your battery!</li><li>Point screen at parade</li></ul>
+</div>
+<div class = "debug">
+Parade not started
+</div>
+<div class = "test">
+</div>
+
+<script>
+var playing = true;
+// var batteryReminder = false;
+var half = false;
+var position = 0;
+var currentUnit = -1;
+var runCount = 0;
+var lockRundown = 8; // after amount times is passed, it will stop guessing the beat and lock it in
+var tempo = 128; // 128 for PTN
+var duration = 1280; // 1472 for introduction; 1280 for regular; 33 for delay
+var startTime = getTime(); // time used ONLY for reference, use activate time for when actually started
+var analyze = 0; // countdown for microphone analysis
+var gram = "";
+audContext = window.AudioContext || window.webkitAudioContext;
+cancelAnimFrame = navigator.webkitCancelAnimationFrame || navigator.mozCancelAnimationFrame;
+requestAnimFrame = navigator.requestAnimationFrame || navigator.webkitRequestAnimationFrame || navigator.mozRequestAnimationFrame || navigator.oRequestAnimationFrame || navigator.msRequestAnimationFrame || function(frame){setTimeout(frame, 1000/60)};
+navigator.getMediaDevices = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+var audioContext = new audContext();
+var analyser = null;
+var frequencyData = null;
+var collection = []; // all the frequencies
+var collection2 = []; // the average of all frequencies
+var collection3 = []; // the highest frequencies
+var collection4 = [];
+
+function getTime(){ // use this for all time functions!
+     if (window.location.search.indexOf("offset=") < 0){return Date.now()}
+     else {
+          var offset = parseInt(window.location.search.substr(window.location.search.indexOf("offset=") + 7));
+          if (offset){return Date.now() + offset}
+     }
+     return Date.now();
+}
+
+/*
+function batteryAPI(battery){
+     battery.addEventListener("levelchange", function(){
+          if (batteryReminder == false){
+               if (battery.level < 0.1){
+                    batteryReminder = true;
+                    if (navigator.vibrate){navigator.vibrate(250)}
+                    document.getElementsByClassName("batteryWarning")[0].setAttribute("class", "batteryWarning");
+               }
+          }
+     });
+}
+*/
+
+function tick(){
+     if ((getTime() - startTime) > (runCount * ((1000 * 60)/(tempo * 4)))){
+          runCount = runCount + 1;
+          half = false;
+
+          document.body.style.backgroundColor = "rgb("+Math.floor(runCount % 15)+", "+Math.floor(runCount % 25)+", "+Math.floor(runCount % 25)+")";
+
+          if ((runCount % 1) == 0){
+               analyze = 64;
+               collection = [];
+          }
+
+          if (playing == true){
+               /*
+               if (unitPlay[position] != "M" && recording == false){
+                    animateBody("c"+(unitPlay[position] || ""));
+                    if (currentUnit == 9 && window.location.href.match("escape") == null){
+                         animateBody(document.body.getAttribute("class")+" dots");
+                    }
+               }
+               */
+               position = position + 1;
+               if (position >= duration){
+                    position = 0;
+                    /*
+                    if (currentUnit == 0 || currentUnit == 1){forwardUnit()} // introduction sequence
+                    changeText(units[currentUnit][0]);
+                    */
+               }
+/*
+               if (document.getElementsByClassName("blankVideo")[0].paused == true){ // some phones pause video if leaving
+                    document.getElementsByClassName("blankVideo")[0].play();
+               }
+*/
+          }
+          if (analyze > 0){
+               streamTick();
+               analyze = analyze - 1;
+          }
+     }
+     /*
+     else if ((getTime() - startTime) > ((runCount - 0.5) * ((1000 * 60)/(tempo * 4))) && half == false) {
+          half = true;
+          console.log(2);
+          if (analyze > 0){
+               streamTick();
+               analyze = analyze - 1;
+          }
+     }
+     */
+     requestAnimFrame(tick);
+}
+
+function streamTick(){
+     /*
+     var highest = 0;
+     var highestFreq = 0;
+     var secondHighest = 0;
+     var secondHighestFreq = 0;
+     var thirdHighest = 0;
+     var thirdHighestFreq = 0;
+     var fourthHighest = 0;
+     var fourthHighestFreq = 0;
+     var fifthHighest = 0;
+     var fifthHighestFreq = 0;
+     */
+     var total = 0;
+     var highest = 0;
+     var highestNode = 0;
+     var zone = 1;
+     var text = "";
+     var data = [];
+     var frequencies = [];
+     var highestNodes = [];
+     var highestFrequencies = []; // per zone
+     var textPrint = [];
+     frequencyData = new Uint8Array(analyser.frequencyBinCount);
+     analyser.getByteFrequencyData(frequencyData);
+     // 200 * 44100 (or 48000) Hz/2048 ~ 4000 Hz
+     // 4000 Hz is maximum music frequency
+     var amount = Math.ceil(4000/(audioContext.sampleRate/analyser.fftSize)); // 171 for 48000 Hz, or 186 for 44100 Hz
+     for (i = 0; i < amount; i++){ // 200 // analyser.frequencyBinCount * 0.75
+          // text = text+new String("___________________________________________________").substr(0, frequencyData[i]/5)+"<br>";
+          // textPrint[i] = new String("___________________________________________________").substr(0, frequencyData[i]/5);
+          // data[i] = frequencyData[i];
+          // total = total + frequencyData[i];
+          // frequencies[i] = frequencyData[i];
+          gram = gram+""+new String("▁▁▂▃▅▆▆▇▇▇▇")[Math.floor(frequencyData[i]/26)];
+          if (frequencyData[i] > highest){highest = frequencyData[i]; highestNode = i}
+          if ((i + 1) >= zone * (amount/5)){ // 5 zones
+               zone = zone + 1;
+               highest = 0;
+               highestNodes.push(highestNode); // the numbers will bunch up if silent (e.g. 12345)
+               highestFrequencies.push(Math.floor(highestNode * audioContext.sampleRate/2048));
+               // highestNode = i; // the numbers won't bunch up if silent (e.g. 12345)
+          }
+     }
+     gram = gram+"<br>";
+     
+     /*
+     frequencies[highestFreq] = 0;
+     for (i = 0; i < frequencies.length; i++){
+          if (frequencies[i] > secondHighest){secondHighest = frequencies[i]; secondHighestFreq = i}
+     }
+     frequencies[secondHighestFreq] = 0;
+     for (i = 0; i < frequencies.length; i++){
+          if (frequencies[i] > thirdHighest){thirdHighest = frequencies[i]; thirdHighestFreq = i}
+     }
+     */
+     
+     // collection.push(data);
+     // collection2.push(total);
+     collection3.push(highestFrequencies);
+     
+     if ((collection3.length % 4) == 0){
+          var highestOfFreq = [0, 0, 0, 0, 0]; // only first 5 needed
+          for (i = collection3.length - 4; i < collection3.length; i++){ // finds peaks and zeroes non-peaks
+               for (x = 0; x < collection3[i].length; x++){
+                    if (collection3[i][x] > highestOfFreq[x]){
+                         highestOfFreq[x] = collection3[i][x];
+                    }
+                    // else {collection3[i][x] = 0}
+               }
+          }
+          collection4.push(highestOfFreq);
+          // console.log(highestOfFreq);
+          document.body.getElementsByClassName("test")[0].innerHTML = document.body.getElementsByClassName("test")[0].innerHTML.substr(0, 200 * 60);
+          document.body.getElementsByClassName("test")[0].innerHTML = gram+""+document.body.getElementsByClassName("test")[0].innerHTML;
+          gram = "";
+     }
+
+     /*
+     textPrint[highestNodes[0]] = textPrint[highestNodes[0]]+highestFrequencies[0];
+     textPrint[highestNodes[1]] = textPrint[highestNodes[1]]+highestFrequencies[1];
+     textPrint[highestNodes[2]] = textPrint[highestNodes[2]]+highestFrequencies[2];
+     textPrint[highestNodes[3]] = textPrint[highestNodes[3]]+highestFrequencies[3];
+     textPrint[highestNodes[4]] = textPrint[highestNodes[4]]+highestFrequencies[4];
+     for (i = 0; i < textPrint.length; i++){
+          textPrint[i] = textPrint[i]+"<br>";
+     }
+     document.body.getElementsByClassName("test")[0].innerHTML = textPrint.join(); //+"<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>"+((total/(1 * 1)) * 10); // new String("==========").substr(0, (total/(200 * 255)) * 10)
+     */
+     
+     // document.body.getElementsByClassName("test")[0].innerHTML = text;
+     // requestAnimFrame(streamTick);
+}
+
+function gotStream(stream){ // load the audio stuff; only needed once
+     window.persistAudioStream = stream; // audio turns off after some seconds on some FireFox
+     var audio = document.getElementById("myAudio");
+     var audio2 = document.getElementById("myAudio2");
+     audio.src = URL.createObjectURL(document.getElementsByTagName("input")[0].files[0]);
+     audio2.src = URL.createObjectURL(document.getElementsByTagName("input")[0].files[0]);
+     var audioSource = audioContext.createMediaElementSource(audio);
+     analyser = audioContext.createAnalyser();
+     audioSource.connect(analyser);
+     // analyser.connect(audioContext.destination); // de-commenting this creates a megaphone
+     analyser.fftSize = 2048; // lower = less CPU?
+
+     audio.play();
+     audio2.play();
+     tick();
+     // streamTick(); // begin ticking
+}
+
+function initialize(){
+     // navigator.getUserMedia is apparently deprecated
+     // navigator.getUserMedia also needs https
+     // if (navigator.getBattery){navigator.getBattery().then(batteryAPI)}
+
+     alert("Your phone's microphone is needed to tell when the parade starts! Grant access to your microphone next.");
+     // navigator.getMediaDevices({"audio": {"mandatory": {"googEchoCancellation": "false", "googAutoGainControl": "false", "googNoiseSuppression": "false", "googHighpassFilter": "false"}, "optional": []}}, gotStream, function(e){alert("Something went wrong! Refresh the page and grant access to your microphone."); console.log(e)});
+
+     playing = true;
+     position = 0;
+     currentUnit = -1;
+     runCount = 0;
+     startTime = getTime();
+     
+     gotStream(null);
+     // forwardUnit();
+     // animateBody("c");
+}
+
+document.getElementsByClassName("next")[0].addEventListener("click", function(event){initialize()});
+</script>
+
+</body>
+</html>
+<!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER --><!-- ANALYZER -->

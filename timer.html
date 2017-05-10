@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name = "viewport" content = "width = device-width, maximum-scale = 1, initial-scale = 1">
+<style>
+body{margin: 0}
+input{font-family: monospace; padding: 64px}
+video{width: 128px}
+
+.large{padding: 16px 64px}
+.larger{padding: 4px 64px}
+.time{background-color: #FFFFFF; font-size: 2.5em; padding: 16px 0}
+.lap{background-color: #000000}
+</style>
+</head>
+<body>
+<div class = "time"></div>
+<input type = "button" class = "decrease small" value = " < "><input type = "button" class = "increase small" value = " > ">
+<br>
+<input type = "button" class = "decrease2 large" value = " <<"><input type = "button" class = "increase2 large" value = ">> ">
+<br>
+<input type = "button" class = "decrease3 larger" value = "<<<"><input type = "button" class = "increase3 larger" value = ">>>">
+<br>
+<br>
+<br>
+<a class = "link1" href = "indexmobile.min.html?escape&offset=0">Go to indexmobile.min.html</a>
+<br>
+<a class = "display">0</a>
+<br>
+<video src = "blankvideo.mp4" loop = "true"></video>
+<script>
+var offset = 0;
+var runtime = 0;
+var link = "indexmobile.min.html?escape&offset=";
+requestAnimFrame = webkitRequestAnimationFrame || requestAnimationFrame;
+
+function changeLink(){
+     document.getElementsByClassName("link1")[0].setAttribute("href", link+""+offset);
+     document.getElementsByClassName("display")[0].innerText = offset/1000;
+     document.getElementsByTagName("video")[0].play();
+}
+
+function tick(){
+     var adjusted = (Date.now() + offset)/1000;
+     runtime = runtime + 1;
+     if (runtime > 10){runtime = 0}
+     if (Math.abs(adjusted - Math.ceil(adjusted)) < 0.06){
+          document.getElementsByClassName("time")[0].setAttribute("class", "time lap");
+     }
+     else {
+          document.getElementsByClassName("time")[0].setAttribute("class", "time");
+     }
+     if (runtime == 1){
+          document.getElementsByClassName("time")[0].innerText = adjusted;
+     }
+     requestAnimFrame(tick);
+}
+
+
+if (window.location.search.indexOf("offset=") > 0){offset = parseInt(window.location.search.substr(window.location.search.indexOf("offset=") + 7))}
+document.getElementsByClassName("decrease")[0].onmousedown = function(event){offset = offset - 25; changeLink()};
+document.getElementsByClassName("increase")[0].onmousedown = function(event){offset = offset + 25; changeLink()};
+document.getElementsByClassName("decrease2")[0].onmousedown = function(event){offset = offset - 500; changeLink()};
+document.getElementsByClassName("increase2")[0].onmousedown = function(event){offset = offset + 500; changeLink()};
+document.getElementsByClassName("decrease3")[0].onmousedown = function(event){offset = offset - 10000; changeLink()};
+document.getElementsByClassName("increase3")[0].onmousedown = function(event){offset = offset + 10000; changeLink()};
+tick();
+</script>
+</body>
+</html>
